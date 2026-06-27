@@ -63,7 +63,8 @@ def connect(body: BotConnectIn, db: Session = Depends(get_db),
     db.flush()
 
     # 3) register webhook
-    webhook_url = f"{settings.public_base_url}/tg/{bot.routing_id}"
+    base_url = settings.public_base_url.rstrip("/")
+    webhook_url = f"{base_url}/tg/{bot.routing_id}"
     ok_webhook, webhook_data = telegram_api.set_webhook(token, webhook_url, bot.webhook_secret)
     
     # Log details to stdout (visible in Vercel Logs)
