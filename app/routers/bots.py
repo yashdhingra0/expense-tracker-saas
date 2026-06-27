@@ -62,9 +62,21 @@ def connect(body: BotConnectIn, db: Session = Depends(get_db),
     db.add(bot)
     db.flush()
 
-    # 3) register webhook (best-effort; harmless if offline in dev)
+    # 3) register webhook
     webhook_url = f"{settings.public_base_url}/tg/{bot.routing_id}"
-    telegram_api.set_webhook(token, webhook_url, bot.webhook_secret)
+    ok_webhook, webhook_data = telegram_api.set_webhook(token, webhook_url, bot.webhook_secret)
+    
+    # Log details to stdout (visible in Vercel Logs)
+    print(f"[BOT CONNECT] public_base_url: {settings.public_base_url}")
+    print(f"[BOT CONNECT] webhook_url: {webhook_url}")
+    print(f"[BOT CONNECT] set_webhook result: ok={ok_webhook}, data={webhook_data}")
+
+    if not ok_webhook and not settings.dev_allow_unverified_tokens:
+        error_msg = webhook_data.get("description", "Unknown Telegram error")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to register webhook with Telegram: {error_msg}. Verify PUBLIC_BASE_URL settings."
+        )
 
     db.commit()
     return {"ok": True, "bot": _bot_out(bot),
