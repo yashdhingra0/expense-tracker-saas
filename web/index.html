@@ -502,6 +502,10 @@
     display: grid;
     grid-template-columns: 240px 1fr;
     min-height: 100vh;
+    transition: grid-template-columns 0.3s ease;
+  }
+  #app.sidebar-collapsed {
+    grid-template-columns: 0px 1fr;
   }
   aside {
     background: #070b13;
@@ -513,9 +517,63 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, border-right-width 0.3s ease;
+    overflow: hidden;
+  }
+  #app.sidebar-collapsed aside {
+    width: 0;
+    padding: 24px 0;
+    opacity: 0;
+    pointer-events: none;
+    border-right-width: 0px;
   }
   aside .logo {
     padding: 0 8px 24px;
+    display: flex;
+    align-items: center;
+  }
+  .btn-sidebar-close {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-sidebar-close:hover {
+    color: var(--ink);
+    background: var(--panel-hover);
+  }
+  .global-open-sidebar-container {
+    display: none;
+    margin-bottom: 20px;
+  }
+  #app.sidebar-collapsed .global-open-sidebar-container {
+    display: block;
+  }
+  .btn-toggle-sidebar-open {
+    background: #0d1527;
+    border: 1px solid var(--panel-border);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-toggle-sidebar-open:hover {
+    background: var(--panel-hover);
+    border-color: var(--brand);
   }
   nav a {
     display: flex;
@@ -1122,7 +1180,11 @@ SELECT * FROM telegram_bots WHERE user_id = ?;
 <!-- ===================== APP ===================== -->
 <div id="app" class="hidden">
   <aside>
-    <div class="logo"><div class="mark">₹</div><h1>Ledgerly</h1></div>
+    <div class="logo">
+      <div class="mark">₹</div>
+      <h1>Ledgerly</h1>
+      <button class="btn-sidebar-close" id="closeSidebar" title="Collapse Menu">◀</button>
+    </div>
     <nav>
       <a data-view="dashboard" class="active"><span class="ic">◉</span> Dashboard</a>
       <a data-view="connect"><span class="ic">⌁</span> Connect Bot</a>
@@ -1136,6 +1198,12 @@ SELECT * FROM telegram_bots WHERE user_id = ?;
   </aside>
 
   <main>
+    <!-- Global Open Sidebar Button (hidden when sidebar is visible) -->
+    <div class="global-open-sidebar-container">
+      <button class="btn-toggle-sidebar-open" id="openSidebar" title="Expand Menu">
+        <span>☰ Menu</span>
+      </button>
+    </div>
     <!-- DASHBOARD VIEW -->
     <section id="view-dashboard">
       <div class="topbar">
@@ -1233,7 +1301,7 @@ let CUR="₹", MONTH=null, MONTHS=[];
 async function api(path,opts={}){
   const r=await fetch(API+path,{credentials:"same-origin",
     headers:{"Content-Type":"application/json"},...opts});
-  if(r.status===401){show("auth");throw new Error("unauth");}
+  if(r.status===401 && !path.startsWith("/auth/")){show("auth");throw new Error("unauth");}
   const d=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(d.detail||("HTTP "+r.status));
   return d;
@@ -1387,7 +1455,18 @@ async function doAuth(){
   const email=el("email").value.trim(),password=el("password").value,err=el("authErr");err.textContent="";
   try{const u=await api(`/auth/${mode}`,{method:"POST",body:JSON.stringify({email,password})});
     await enterApp(u);
-  }catch(e){err.textContent=e.message;}
+  }catch(e){
+    if(e.message && e.message.includes("not registered")) {
+      err.innerHTML = `This email is not registered. <a href="#" id="authErrSignup" style="color:var(--brand);text-decoration:underline;font-weight:600">Sign up here</a> to create an account.`;
+      el("authErrSignup").onclick=ev=>{
+        ev.preventDefault();
+        setMode("signup");
+        err.textContent="";
+      };
+    } else {
+      err.textContent=e.message;
+    }
+  }
 }
 async function enterApp(u){
   CUR=u.currency||"₹"; el("userEmail").textContent=u.email; show("app");
@@ -1692,6 +1771,19 @@ document.querySelectorAll("nav a").forEach(a=>a.onclick=()=>view(a.dataset.view)
 el("connectBtn").onclick=connectBot;
 el("tokenInput").addEventListener("keydown",e=>{if(e.key==="Enter")connectBot();});
 el("saveGeneral").onclick=saveGeneral; el("saveCaps").onclick=saveCaps;
+
+// Sidebar toggle wire-up
+el("closeSidebar").onclick = () => {
+  el("app").classList.add("sidebar-collapsed");
+  localStorage.setItem("sidebarCollapsed", "true");
+};
+el("openSidebar").onclick = () => {
+  el("app").classList.remove("sidebar-collapsed");
+  localStorage.setItem("sidebarCollapsed", "false");
+};
+if (localStorage.getItem("sidebarCollapsed") === "true") {
+  el("app").classList.add("sidebar-collapsed");
+}
 
 // Landing & Sandbox events
 el("landSignIn").onclick = () => { setMode("login"); show("auth"); };

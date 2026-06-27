@@ -40,8 +40,10 @@ def signup(body: SignupIn, resp: Response, db: Session = Depends(get_db)):
 @router.post("/login", response_model=UserOut)
 def login(body: LoginIn, resp: Response, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()
-    if not user or not verify_password(body.password, user.password_hash):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password")
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This email address is not registered. Please create an account.")
+    if not verify_password(body.password, user.password_hash):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect password. Please try again.")
     _set_cookie(resp, user.id)
     return UserOut(id=user.id, email=user.email, plan=user.plan,
                    currency=user.currency, monthly_budget=float(user.monthly_budget))
