@@ -109,3 +109,45 @@ ARCHITECTURE.md      full system design + roadmap
 Phase 0 runs the webhook inline for simplicity. The path to "built to scale" (see `ARCHITECTURE.md`): swap token encryption to a real **KMS**, put a **queue + worker fleet** behind the webhook, move to **managed Postgres** with replicas, add **Stripe** billing, and deploy the stateless services on Cloud Run / ECS / Fly.io behind a load balancer.
 
 > Security note: `DEV_ALLOW_UNVERIFIED_TOKENS=true` lets you connect a bot offline during dev. Set it to `false` in production so only tokens Telegram accepts are stored.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions of all kinds! Whether you want to fix bugs, add new parsing features, improve dashboard analytics, or clean up documentation, here is how you can get started:
+
+1. **Fork the Repository**: Click the **Fork** button at the top-right of this page.
+2. **Clone Your Fork**:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/expense-tracker-saas.git
+   cd expense-tracker-saas
+   ```
+3. **Set Up Local Development**:
+   - Create and activate a virtual environment:
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     ```
+   - Install dependencies:
+     ```bash
+     pip install -r requirements.txt
+     ```
+   - Create your environment config file:
+     ```bash
+     cp .env.example .env
+     ```
+4. **Make Your Changes**:
+   - Create a feature branch: `git checkout -b feat/my-new-feature`
+   - Run the development server: `uvicorn app.main:app --reload`
+   - Verify changes locally.
+5. **Submit a Pull Request**:
+   - Commit your changes: `git commit -m "feat: add support for new feature"`
+   - Push to your fork: `git push origin feat/my-new-feature`
+   - Open a Pull Request back to this main repository.
+
+---
+
+## 📄 License
+
+This project is open-source and licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute it as you wish.
+
